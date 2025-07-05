@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, Platform, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
 import { Calendar } from 'lucide-react-native';
 
 interface DatePickerProps {
@@ -11,6 +11,11 @@ interface DatePickerProps {
   containerStyle?: any;
 }
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
 export const DatePicker: React.FC<DatePickerProps> = ({
   label,
   value,
@@ -20,6 +25,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   containerStyle,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -29,28 +36,97 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     });
   };
 
-  const handleDateSelect = () => {
-    if (Platform.OS === 'web') {
-      // For web, we'll use a simple date selection
-      const today = new Date();
-      onValueChange(today);
-    } else {
-      setModalVisible(true);
+  const openModal = () => {
+    setSelectedMonth(value ? value.getMonth() : new Date().getMonth());
+    setSelectedYear(value ? value.getFullYear() : new Date().getFullYear());
+    setModalVisible(true);
+  };
+
+  const daysInMonth = (month: number, year: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfWeek = (month: number, year: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const handleDaySelect = (day: number) => {
+    if (selectedMonth !== null) {
+      const date = new Date(selectedYear, selectedMonth, day);
+      onValueChange(date);
+      setModalVisible(false);
     }
   };
 
-  const generateDateOptions = () => {
-    const dates = [];
-    const today = new Date();
-    
-    // Generate next 60 days
-    for (let i = 0; i < 60; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date);
+  const handlePrevMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth((selectedMonth ?? 0) - 1);
     }
-    
-    return dates;
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth((selectedMonth ?? 0) + 1);
+    }
+  };
+
+  // Render day grid for the selected month
+  const renderDayGrid = () => {
+    if (selectedMonth === null) return null;
+    const days = daysInMonth(selectedMonth, selectedYear);
+    const firstDay = getFirstDayOfWeek(selectedMonth, selectedYear);
+    const today = new Date();
+    const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
+
+    let grid: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) grid.push(null);
+    for (let d = 1; d <= days; d++) grid.push(d);
+
+    // Fill the last row to 7 days
+    while (grid.length % 7 !== 0) grid.push(null);
+
+    return (
+      <View style={styles.dayGrid}>
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, i) => (
+          <Text key={i} style={styles.dayHeader}>{w}</Text>
+        ))}
+        {grid.map((d, i) => {
+          const isToday = isCurrentMonth && d === today.getDate();
+          const isSelected = value &&
+            value.getDate() === d &&
+            value.getMonth() === selectedMonth &&
+            value.getFullYear() === selectedYear;
+          return (
+            <TouchableOpacity
+              key={i}
+              disabled={!d}
+              onPress={() => d && handleDaySelect(d)}
+              style={[
+                styles.dayCell,
+                isSelected && styles.selectedDayCell,
+                isToday && styles.todayCell,
+                !d && styles.emptyDayCell,
+              ]}
+            >
+              <Text style={[
+                styles.dayCellText,
+                isSelected && styles.selectedDayCellText,
+                isToday && styles.todayCellText,
+                !d && styles.emptyDayCellText,
+              ]}>
+                {d ? d : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
 
   return (
@@ -60,9 +136,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           {label}
         </Text>
       )}
-      
       <TouchableOpacity
-        onPress={handleDateSelect}
+        onPress={openModal}
         style={[
           styles.datePicker,
           error && styles.datePickerError,
@@ -76,13 +151,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         </Text>
         <Calendar size={20} color="#6B7280" />
       </TouchableOpacity>
-
       {error && (
         <Text style={styles.errorText}>
           {error}
         </Text>
       )}
-
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -91,24 +164,19 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Select Date
-            </Text>
-            <ScrollView style={styles.dateOptions}>
-              {generateDateOptions().map((date, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    onValueChange(date);
-                    setModalVisible(false);
-                  }}
-                  style={styles.dateOption}
-                >
-                  <Text style={styles.dateOptionText}>
-                    {formatDate(date)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.monthHeader}>
+              <TouchableOpacity onPress={handlePrevMonth} style={styles.monthNavBtn}>
+                <Text style={styles.monthNavText}>{'<'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.monthTitle}>
+                {MONTHS[selectedMonth ?? 0]} {selectedYear}
+              </Text>
+              <TouchableOpacity onPress={handleNextMonth} style={styles.monthNavBtn}>
+                <Text style={styles.monthNavText}>{'>'}</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+              {renderDayGrid()}
             </ScrollView>
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
@@ -181,36 +249,89 @@ const styles = StyleSheet.create({
     padding: 24,
     margin: 16,
     width: '90%',
-    maxHeight: '70%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    alignItems: 'center',
   },
-  modalTitle: {
-    fontSize: 20,
+  monthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    width: '100%',
+  },
+  monthTitle: {
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
     color: '#111827',
+    textAlign: 'center',
+    flex: 1,
   },
-  dateOptions: {
-    maxHeight: 300,
+  monthNavBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  dateOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+  monthNavText: {
+    fontSize: 20,
+    color: '#3B82F6',
+    fontWeight: '700',
+  },
+  dayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 308,
+    alignSelf: 'center',
     marginBottom: 8,
   },
-  dateOptionText: {
+  dayHeader: {
+    width: 44,
     textAlign: 'center',
-    color: '#111827',
+    fontWeight: '700',
+    color: '#6B7280',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  dayCell: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 2,
+    backgroundColor: 'transparent',
+  },
+  selectedDayCell: {
+    backgroundColor: '#3B82F6',
+  },
+  todayCell: {
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+  },
+  emptyDayCell: {
+    backgroundColor: 'transparent',
+  },
+  dayCellText: {
     fontSize: 16,
+    color: '#111827',
     fontWeight: '500',
   },
+  selectedDayCellText: {
+    color: 'white',
+    fontWeight: '700',
+  },
+  todayCellText: {
+    color: '#3B82F6',
+    fontWeight: '700',
+  },
+  emptyDayCellText: {
+    color: 'transparent',
+  },
   cancelButton: {
-    marginTop: 20,
-    paddingVertical: 16,
+    marginTop: 10,
+    paddingVertical: 12,
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
+    width: '100%',
   },
   cancelText: {
     textAlign: 'center',
