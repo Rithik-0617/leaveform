@@ -18,9 +18,12 @@ export interface LeaveRequest {
   userId: string;
   empId: string;
   department: string;
+  requestType: 'Leave' | 'Permission';
   leaveType: string;
   fromDate: Date;
-  toDate: Date;
+  toDate?: Date;
+  fromTime?: string;
+  toTime?: string;
   reason: string;
   fileUrl?: string;
   status: 'Pending' | 'Approved' | 'Rejected';
@@ -34,7 +37,7 @@ export const createLeaveRequest = async (requestData: Omit<LeaveRequest, 'id' | 
     const docRef = await addDoc(collection(db, 'leaveRequests'), {
       ...requestData,
       fromDate: Timestamp.fromDate(requestData.fromDate),
-      toDate: Timestamp.fromDate(requestData.toDate),
+      toDate: requestData.toDate ? Timestamp.fromDate(requestData.toDate) : null,
       status: 'Pending',
       createdAt: Timestamp.now(),
     });
@@ -76,7 +79,7 @@ export const getLeaveRequests = async (userId?: string): Promise<LeaveRequest[]>
         id: docSnapshot.id,
         ...data,
         fromDate: data.fromDate.toDate(),
-        toDate: data.toDate.toDate(),
+        toDate: data.toDate ? data.toDate.toDate() : undefined,
         createdAt: data.createdAt.toDate(),
         userName,
       } as LeaveRequest);

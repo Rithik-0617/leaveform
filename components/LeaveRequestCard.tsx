@@ -64,10 +64,37 @@ export const LeaveRequestCard: React.FC<LeaveRequestCardProps> = ({
     });
   };
 
-  const calculateDays = () => {
-    const diffTime = Math.abs(request.toDate.getTime() - request.fromDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+  const calculateDuration = () => {
+    if (request.requestType === 'Permission') {
+      if (request.fromTime && request.toTime) {
+        const [fromHour, fromMinute] = request.fromTime.split(':').map(Number);
+        const [toHour, toMinute] = request.toTime.split(':').map(Number);
+        const fromMinutes = fromHour * 60 + fromMinute;
+        const toMinutes = toHour * 60 + toMinute;
+        const diffMinutes = toMinutes - fromMinutes;
+        
+        if (diffMinutes >= 60) {
+          return `${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m`;
+        } else {
+          return `${diffMinutes}m`;
+        }
+      }
+      return 'N/A';
+    } else {
+      if (!request.toDate) return '1 day';
+      const diffTime = Math.abs(request.toDate.getTime() - request.fromDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return `${diffDays} days`;
+    }
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return '';
+    const [hour, minute] = time.split(':');
+    const hourNum = parseInt(hour);
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    const displayHour = hourNum % 12 || 12;
+    return `${displayHour}:${minute} ${ampm}`;
   };
 
   return (
@@ -92,18 +119,33 @@ export const LeaveRequestCard: React.FC<LeaveRequestCardProps> = ({
           </View>
 
           <View style={styles.leaveTypeContainer}>
-            <Text style={styles.leaveType}>{request.leaveType} Leave</Text>
+            <View style={styles.leaveTypeLeft}>
+              <Text style={styles.leaveType}>
+                {request.requestType === 'Permission' ? 'Permission' : `${request.leaveType} Leave`}
+              </Text>
+              <Text style={styles.requestType}>
+                {request.requestType}
+              </Text>
+            </View>
             <View style={styles.daysContainer}>
               <Calendar size={14} color="#6B7280" />
-              <Text style={styles.daysText}>{calculateDays()} days</Text>
+              <Text style={styles.daysText}>{calculateDuration()}</Text>
             </View>
           </View>
 
           <View style={styles.dateContainer}>
-            <Text style={styles.dateLabel}>Duration</Text>
-            <Text style={styles.dateValue}>
-              {formatDate(request.fromDate)} → {formatDate(request.toDate)}
+            <Text style={styles.dateLabel}>
+              {request.requestType === 'Permission' ? 'Date & Time' : 'Duration'}
             </Text>
+            {request.requestType === 'Permission' ? (
+              <Text style={styles.dateValue}>
+                {formatDate(request.fromDate)} • {formatTime(request.fromTime || '')} - {formatTime(request.toTime || '')}
+              </Text>
+            ) : (
+              <Text style={styles.dateValue}>
+                {formatDate(request.fromDate)}{request.toDate && request.toDate.getTime() !== request.fromDate.getTime() ? ` → ${formatDate(request.toDate)}` : ''}
+              </Text>
+            )}
           </View>
           
           <View style={styles.reasonContainer}>
@@ -233,10 +275,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
   },
+  leaveTypeLeft: {
+    flexDirection: 'column',
+  },
   leaveType: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1E40AF',
+  },
+  requestType: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   daysContainer: {
     flexDirection: 'row',
