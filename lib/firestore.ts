@@ -30,6 +30,7 @@ export interface LeaveRequest {
   remark?: string;
   createdAt: Date;
   userName?: string;
+  employeeId?: string;
 }
 
 export const createLeaveRequest = async (requestData: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>) => {

@@ -14,6 +14,7 @@ export interface User {
   email: string;
   role: 'Staff' | 'Director';
   department: string;
+  employeeId: string;
   createdAt: Date;
 }
 
@@ -22,7 +23,8 @@ export const signUp = async (
   password: string, 
   name: string, 
   role: 'Staff' | 'Director', 
-  department: string
+  department: string,
+  employeeId: string
 ) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -35,6 +37,7 @@ export const signUp = async (
       name,
       role,
       department,
+      employeeId,
       createdAt: new Date(),
     };
 

@@ -98,19 +98,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* Quick Actions */}
-          {user?.role === 'Staff' && (
-            <Card style={styles.quickActionsCard}>
-              <CardContent>
-                <Button
-                  title="Submit Leave Request"
-                  onPress={() => router.push('/submit')}
-                  icon={<Plus size={20} color="white" />}
-                />
-              </CardContent>
-            </Card>
-          )}
-
           {/* Stats */}
           <View style={styles.statsContainer}>
             <Card style={styles.statCard}>
@@ -203,9 +190,6 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 16,
     color: '#6B7280',
-  },
-  quickActionsCard: {
-    marginBottom: 24,
   },
   statsContainer: {
     flexDirection: 'row',

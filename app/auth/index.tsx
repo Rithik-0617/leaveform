@@ -32,6 +32,7 @@ export default function AuthScreen() {
     name: '',
     role: 'Staff',
     department: '',
+    employeeId: '',
   });
 
   const handleAuth = async () => {
@@ -40,7 +41,7 @@ export default function AuthScreen() {
       return;
     }
 
-    if (!isLogin && (!formData.name || (formData.role === 'Staff' && !formData.department))) {
+    if (!isLogin && (!formData.name || !formData.employeeId || (formData.role === 'Staff' && !formData.department))) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -55,7 +56,8 @@ export default function AuthScreen() {
           formData.password,
           formData.name,
           formData.role as 'Staff' | 'Director',
-          formData.department
+          formData.department,
+          formData.employeeId
         );
       }
       router.replace('/(tabs)');
@@ -118,6 +120,15 @@ export default function AuthScreen() {
                       value={formData.name}
                       onChangeText={(text) => setFormData({ ...formData, name: text })}
                       placeholder="Enter your full name"
+                      icon={<User size={20} color="#6B7280" />}
+                      containerStyle={styles.input}
+                    />
+
+                    <Input
+                      label="Employee ID"
+                      value={formData.employeeId}
+                      onChangeText={(text) => setFormData({ ...formData, employeeId: text })}
+                      placeholder="Enter your employee ID"
                       icon={<User size={20} color="#6B7280" />}
                       containerStyle={styles.input}
                     />

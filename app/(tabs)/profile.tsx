@@ -114,14 +114,26 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.infoRow}>
-              <Building size={20} color="#6B7280" />
+              <User size={20} color="#6B7280" />
               <View style={styles.infoText}>
-                <Text style={styles.infoLabel}>Department</Text>
+                <Text style={styles.infoLabel}>Employee ID</Text>
                 <Text style={styles.infoValue}>
-                  {user.department}
+                  {user.employeeId}
                 </Text>
               </View>
             </View>
+
+            {user.role !== 'Director' && (
+              <View style={styles.infoRow}>
+                <Building size={20} color="#6B7280" />
+                <View style={styles.infoText}>
+                  <Text style={styles.infoLabel}>Department</Text>
+                  <Text style={styles.infoValue}>
+                    {user.department}
+                  </Text>
+                </View>
+              </View>
+            )}
 
             <View style={styles.infoRow}>
               <Shield size={20} color="#6B7280" />

@@ -81,7 +81,11 @@ export default function SubmitLeaveScreen() {
       const currentUser = await getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
-        setFormData(prev => ({ ...prev, department: currentUser.department }));
+        setFormData(prev => ({ 
+          ...prev, 
+          department: currentUser.department,
+          empId: currentUser.employeeId
+        }));
       } else {
         router.replace('/auth');
       }
@@ -278,17 +282,19 @@ export default function SubmitLeaveScreen() {
                 <Input
                   label="Employee ID"
                   value={formData.empId}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, empId: text }))}
-                  placeholder="Enter your employee ID"
+                  placeholder="Employee ID"
+                  editable={false}
                   containerStyle={styles.input}
+                  style={styles.readOnlyInput}
                 />
 
-                <Picker
+                <Input
                   label="Department"
-                  options={departmentOptions}
                   value={formData.department}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                  placeholder="Department"
+                  editable={false}
                   containerStyle={styles.input}
+                  style={styles.readOnlyInput}
                 />
 
                 <Picker
@@ -489,6 +495,10 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 0,
+  },
+  readOnlyInput: {
+    backgroundColor: '#F3F4F6',
+    color: '#6B7280',
   },
   submitButton: {
     marginTop: 12,
