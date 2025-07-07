@@ -16,9 +16,24 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": ["expo-router", "expo-font"],
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "132bd587-ef57-4902-a06c-ee22bd120033"
+      }
+    },
+    "owner": "rithik_ve",
+    "android": {
+      "package": "com.srmrearch.leavemanager"
     }
   }
 }

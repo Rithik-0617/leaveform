@@ -8,7 +8,7 @@ import { Picker } from '@/components/ui/Picker';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, updateUserEmployeeId } from '@/lib/auth';
 import { createLeaveRequest } from '@/lib/firestore';
 import { Send, Clock, Calendar, User } from 'lucide-react-native';
 
@@ -84,7 +84,7 @@ export default function SubmitLeaveScreen() {
         setFormData(prev => ({ 
           ...prev, 
           department: currentUser.department,
-          empId: currentUser.employeeId
+          empId: currentUser.employeeId || '' // Leave empty if no employee ID, let user enter it
         }));
       } else {
         router.replace('/auth');
@@ -109,45 +109,66 @@ export default function SubmitLeaveScreen() {
   };
 
   const validateForm = () => {
+    console.log('Validating form...');
+    console.log('Current formData:', formData);
+    console.log('Current user:', user);
+    
     if (!user) {
+      console.log('Validation failed: No user');
       Alert.alert('Error', 'User not found');
       return false;
     }
+    
     if (user.role !== 'Staff') {
+      console.log('Validation failed: User role is not Staff, role is:', user.role);
       Alert.alert('Error', 'Only staff members can submit requests');
       return false;
     }
-    if (!formData.empId.trim()) {
+    
+    if (!formData.empId || !formData.empId.trim()) {
+      console.log('Validation failed: Employee ID missing or empty, empId:', formData.empId);
       Alert.alert('Error', 'Please enter your Employee ID');
       return false;
     }
+    
     if (!formData.department) {
+      console.log('Validation failed: Department missing');
       Alert.alert('Error', 'Please select your department');
       return false;
     }
+    
     if (!formData.requestType) {
+      console.log('Validation failed: Request type missing');
       Alert.alert('Error', 'Please select request type');
       return false;
     }
+    
     if (formData.requestType === 'Leave' && !formData.leaveType) {
+      console.log('Validation failed: Leave type missing');
       Alert.alert('Error', 'Please select leave type');
       return false;
     }
+    
     if (formData.requestType === 'Permission' && !formData.permissionType.trim()) {
+      console.log('Validation failed: Permission type missing');
       Alert.alert('Error', 'Please enter permission type');
       return false;
     }
+    
     if (!formData.fromDate) {
+      console.log('Validation failed: From date missing');
       Alert.alert('Error', 'Please select date');
       return false;
     }
     
     if (formData.requestType === 'Leave') {
       if (formData.leaveDuration === 'multiple' && !formData.toDate) {
+        console.log('Validation failed: To date missing for multiple days');
         Alert.alert('Error', 'Please select to date');
         return false;
       }
       if (formData.leaveDuration === 'multiple' && formData.fromDate > formData.toDate!) {
+        console.log('Validation failed: From date after to date');
         Alert.alert('Error', 'From date cannot be after to date');
         return false;
       }
@@ -155,10 +176,12 @@ export default function SubmitLeaveScreen() {
     
     if (formData.requestType === 'Permission') {
       if (!formData.fromTime) {
+        console.log('Validation failed: From time missing');
         Alert.alert('Error', 'Please select from time');
         return false;
       }
       if (!formData.toTime) {
+        console.log('Validation failed: To time missing');
         Alert.alert('Error', 'Please select to time');
         return false;
       }
@@ -171,28 +194,55 @@ export default function SubmitLeaveScreen() {
       const diffMinutes = toMinutes - fromMinutes;
       
       if (diffMinutes <= 0) {
+        console.log('Validation failed: To time not after from time');
         Alert.alert('Error', 'To time must be after from time');
         return false;
       }
       if (diffMinutes > 60) {
+        console.log('Validation failed: Permission duration exceeds 1 hour');
         Alert.alert('Error', 'Permission duration cannot exceed 1 hour');
         return false;
       }
     }
     
     if (!formData.reason.trim()) {
+      console.log('Validation failed: Reason missing');
       Alert.alert('Error', 'Please enter reason');
       return false;
     }
+    
+    console.log('Form validation passed successfully!');
     return true;
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-    if (!user) return;
+    console.log('Submit button clicked');
+    console.log('Form data:', formData);
+    console.log('User:', user);
+    
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
+    
+    if (!user) {
+      console.log('No user found');
+      Alert.alert('Error', 'Please log in to submit request');
+      return;
+    }
 
+    console.log('Starting submission process...');
     setLoading(true);
+    
     try {
+      // Update user's employee ID if it's different or missing
+      if (formData.empId && formData.empId !== user.employeeId) {
+        console.log('Updating user employee ID to:', formData.empId);
+        await updateUserEmployeeId(user.id, formData.empId);
+        // Update local user object
+        setUser((prev: any) => ({ ...prev, employeeId: formData.empId }));
+      }
+
       // Create request data
       const requestData: any = {
         userId: user.id,
@@ -217,7 +267,25 @@ export default function SubmitLeaveScreen() {
         requestData.toTime = formData.toTime;
       }
 
-      await createLeaveRequest(requestData);
+      console.log('Request data to submit:', requestData);
+
+      const result = await createLeaveRequest(requestData);
+      console.log('Submission result:', result);
+
+      // Reset form after successful submission
+      setFormData({
+        empId: formData.empId, // Keep the current employee ID
+        department: user.department,
+        requestType: 'Leave',
+        leaveType: '',
+        permissionType: '',
+        leaveDuration: 'single',
+        fromDate: null,
+        toDate: null,
+        fromTime: '',
+        toTime: '',
+        reason: '',
+      });
 
       Alert.alert('Success', `${formData.requestType} request submitted successfully`, [
         {
@@ -228,7 +296,8 @@ export default function SubmitLeaveScreen() {
         },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to submit request');
+      console.error('Submission error:', error);
+      Alert.alert('Error', error.message || 'Failed to submit request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -282,10 +351,9 @@ export default function SubmitLeaveScreen() {
                 <Input
                   label="Employee ID"
                   value={formData.empId}
-                  placeholder="Employee ID"
-                  editable={false}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, empId: text }))}
+                  placeholder="Enter your employee ID"
                   containerStyle={styles.input}
-                  style={styles.readOnlyInput}
                 />
 
                 <Input
@@ -400,8 +468,12 @@ export default function SubmitLeaveScreen() {
 
                 <Button
                   title="Submit Request"
-                  onPress={handleSubmit}
+                  onPress={() => {
+                    console.log('Button pressed - calling handleSubmit');
+                    handleSubmit();
+                  }}
                   loading={loading}
+                  disabled={loading}
                   icon={<Send size={20} color="white" />}
                   style={styles.submitButton}
                 />

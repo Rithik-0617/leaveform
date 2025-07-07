@@ -14,6 +14,15 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey ? 'SET' : 'NOT SET',
+  authDomain: firebaseConfig.authDomain ? 'SET' : 'NOT SET',
+  projectId: firebaseConfig.projectId ? 'SET' : 'NOT SET',
+  storageBucket: firebaseConfig.storageBucket ? 'SET' : 'NOT SET',
+  messagingSenderId: firebaseConfig.messagingSenderId ? 'SET' : 'NOT SET',
+  appId: firebaseConfig.appId ? 'SET' : 'NOT SET',
+});
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

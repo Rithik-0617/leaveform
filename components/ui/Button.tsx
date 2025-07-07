@@ -72,7 +72,12 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={() => {
+        console.log('TouchableOpacity pressed');
+        if (!disabled && !loading) {
+          onPress();
+        }
+      }}
       disabled={disabled || loading}
       style={[
         styles.button,
@@ -81,6 +86,7 @@ export const Button: React.FC<ButtonProps> = ({
         (disabled || loading) && styles.disabled,
         style,
       ]}
+      activeOpacity={0.7}
     >
       {loading ? (
         <ActivityIndicator 

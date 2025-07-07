@@ -35,16 +35,30 @@ export interface LeaveRequest {
 
 export const createLeaveRequest = async (requestData: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>) => {
   try {
-    const docRef = await addDoc(collection(db, 'leaveRequests'), {
+    console.log('Creating leave request with data:', requestData);
+    
+    // Validate required fields
+    if (!requestData.userId || !requestData.empId || !requestData.department || !requestData.requestType || !requestData.fromDate || !requestData.reason) {
+      throw new Error('Missing required fields for leave request');
+    }
+    
+    const dataToSave = {
       ...requestData,
       fromDate: Timestamp.fromDate(requestData.fromDate),
       toDate: requestData.toDate ? Timestamp.fromDate(requestData.toDate) : null,
       status: 'Pending',
       createdAt: Timestamp.now(),
-    });
+    };
+    
+    console.log('Data to save to Firestore:', dataToSave);
+    
+    const docRef = await addDoc(collection(db, 'leaveRequests'), dataToSave);
+    console.log('Leave request created with ID:', docRef.id);
+    
     return docRef.id;
   } catch (error) {
-    throw error;
+    console.error('Error creating leave request:', error);
+    throw new Error(`Failed to create leave request: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

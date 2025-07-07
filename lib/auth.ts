@@ -87,3 +87,11 @@ export const getCurrentUser = async (): Promise<User | null> => {
 export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
+
+export const updateUserEmployeeId = async (userId: string, employeeId: string) => {
+  try {
+    await setDoc(doc(db, 'users', userId), { employeeId }, { merge: true });
+  } catch (error) {
+    throw error;
+  }
+};
